@@ -1,0 +1,9 @@
+fastf1
+requests
+pandas
+numpy
+matplotlib
+xgboost
+scikit-learn
+streamlit
+shap
