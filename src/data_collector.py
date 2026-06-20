@@ -2,24 +2,16 @@ import os
 import pandas as pd
 import fastf1
 
-# Valid locations/event names for each circuit to filter out fastf1 auto-correction for cancelled races
-CIRCUIT_VALIDATORS = {
-    'Canada': {'location': 'montreal', 'keywords': ['canada', 'canadian']},
-    'Silverstone': {'location': 'silverstone', 'keywords': ['british', '70th anniversary', 'silverstone']},
-    'Spa': {'location': 'spa', 'keywords': ['belgian', 'belgium', 'spa']},
-    'Monza': {'location': 'monza', 'keywords': ['italian', 'italy', 'monza']},
-    'Japan': {'location': 'suzuka', 'keywords': ['japanese', 'japan']}
-}
 
-def collect_data():
-    # Setup cache
+def collect_all_data():
+    """Collect lap data for ALL races from 2019 to 2024 using FastF1 event schedules."""
     os.makedirs('cache', exist_ok=True)
     fastf1.Cache.enable_cache('cache')
-    
+
     output_file = 'data/historical_laps.csv'
     os.makedirs('data', exist_ok=True)
-    
-    # Check which sessions have been completed already
+
+    # Track completed sessions for resume support
     completed_sessions = set()
     if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
         try:
@@ -28,90 +20,87 @@ def collect_data():
                 unique_pairs = existing_df[['year', 'circuit']].drop_duplicates()
                 for _, r in unique_pairs.iterrows():
                     completed_sessions.add((int(r['year']), str(r['circuit'])))
-                print(f"Resuming data collection. Found {len(completed_sessions)} sessions already collected in {output_file}.")
+                print(f"Resuming. Found {len(completed_sessions)} sessions already collected.")
         except Exception as e:
-            print(f"Error reading existing CSV to resume: {e}. Will overwrite.")
-    
+            print(f"Error reading existing CSV: {e}. Starting fresh.")
+
     years = range(2019, 2025)
-    circuits = {
-        'Canada': 'Canada',
-        'Silverstone': 'Silverstone',
-        'Spa': 'Belgium',
-        'Monza': 'Monza',
-        'Japan': 'Japan'
-    }
-    
+    total_loaded = 0
+    total_skipped = 0
+    total_failed = 0
+
     for year in years:
-        for circuit_name, query_name in circuits.items():
-            if (year, circuit_name) in completed_sessions:
-                print(f"Session {year} - {circuit_name} already collected. Skipping.")
+        print(f"\n{'='*60}")
+        print(f"  YEAR {year}")
+        print(f"{'='*60}")
+
+        try:
+            schedule = fastf1.get_event_schedule(year)
+        except Exception as e:
+            print(f"Failed to get schedule for {year}: {e}")
+            continue
+
+        # Filter to race events only (exclude testing)
+        races = schedule[schedule['EventFormat'].isin([
+            'conventional', 'sprint', 'sprint_shootout',
+            'sprint_qualifying', 'testing'
+        ]) == False]
+        # Actually just get all non-testing events
+        races = schedule[schedule['EventFormat'] != 'testing']
+
+        # If the above filtering is too aggressive, just use all events
+        # and let fastf1 handle it
+        if len(races) == 0:
+            races = schedule
+
+        print(f"Found {len(races)} events in {year}")
+
+        for _, event in races.iterrows():
+            event_name = event.get('EventName', 'Unknown')
+            location = event.get('Location', 'Unknown')
+            round_num = event.get('RoundNumber', 0)
+
+            # Skip pre-season testing
+            if round_num == 0:
                 continue
-                
-            print(f"\n=========================================")
-            print(f"Loading session: {year} - {circuit_name} ({query_name})...")
+
+            # Use location as circuit identifier for consistency
+            circuit_name = location
+
+            if (year, circuit_name) in completed_sessions:
+                print(f"  [{year} R{round_num}] {event_name} ({location}) - already collected, skipping")
+                total_skipped += 1
+                continue
+
+            print(f"\n  [{year} R{round_num}] {event_name} ({location})...")
+
             try:
-                session = fastf1.get_session(year, query_name, 'R')
-                
-                # Check if the loaded event matches the requested circuit
-                event = session.event
-                loc = event.get('Location', '').lower()
-                name = event.get('EventName', '').lower()
-                
-                validator = CIRCUIT_VALIDATORS[circuit_name]
-                is_valid_location = validator['location'] in loc
-                is_valid_keyword = any(kw in name for kw in validator['keywords'])
-                
-                if not (is_valid_location or is_valid_keyword):
-                    print(f"WARNING: Skipping {year} {circuit_name}. Loaded event '{event.get('EventName')}' at '{event.get('Location')}' does not match target circuit.")
-                    # Write placeholder so we skip this invalid/cancelled session in future runs
-                    dummy_df = pd.DataFrame([{
-                        'year': year,
-                        'circuit': circuit_name,
-                        'driver': 'NONE',
-                        'lap_number': None,
-                        'lap_time_seconds': None,
-                        'compound': None,
-                        'tyre_life': None,
-                        'is_pit_lap': None,
-                        'track_status': None
-                    }])
-                    dummy_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
-                    completed_sessions.add((year, circuit_name))
-                    continue
-                
+                session = fastf1.get_session(year, round_num, 'R')
                 session.load()
                 laps = session.laps
-                
+
                 if laps is None or len(laps) == 0:
-                    print(f"No laps loaded for {year} - {circuit_name}")
-                    # Write placeholder so we skip in future runs
-                    dummy_df = pd.DataFrame([{
-                        'year': year,
-                        'circuit': circuit_name,
-                        'driver': 'NONE',
-                        'lap_number': None,
-                        'lap_time_seconds': None,
-                        'compound': None,
-                        'tyre_life': None,
-                        'is_pit_lap': None,
+                    print(f"    No laps found - race may have been cancelled")
+                    # Save placeholder
+                    dummy = pd.DataFrame([{
+                        'year': year, 'circuit': circuit_name,
+                        'driver': 'NONE', 'lap_number': None,
+                        'lap_time_seconds': None, 'compound': None,
+                        'tyre_life': None, 'is_pit_lap': None,
                         'track_status': None
                     }])
-                    dummy_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
+                    write_header = not os.path.exists(output_file) or os.path.getsize(output_file) == 0
+                    dummy.to_csv(output_file, mode='a', header=write_header, index=False)
                     completed_sessions.add((year, circuit_name))
                     continue
-                
-                print(f"Loaded {len(laps)} laps for {year} - {circuit_name} (Event: {event.get('EventName')})")
-                
+
+                # Extract lap data
                 session_laps = []
                 for _, row in laps.iterrows():
                     lap_time = row['LapTime']
-                    if pd.notna(lap_time):
-                        lap_time_seconds = lap_time.total_seconds()
-                    else:
-                        lap_time_seconds = None
-                    
+                    lap_time_seconds = lap_time.total_seconds() if pd.notna(lap_time) else None
                     is_pit_lap = 1 if pd.notna(row['PitInTime']) else 0
-                    
+
                     session_laps.append({
                         'year': year,
                         'circuit': circuit_name,
@@ -123,19 +112,35 @@ def collect_data():
                         'is_pit_lap': is_pit_lap,
                         'track_status': row['TrackStatus']
                     })
-                
-                # Append session laps to CSV
+
                 if session_laps:
                     session_df = pd.DataFrame(session_laps)
-                    session_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
-                    print(f"Saved {len(session_laps)} laps for {year} - {circuit_name} to {output_file}")
+                    write_header = not os.path.exists(output_file) or os.path.getsize(output_file) == 0
+                    session_df.to_csv(output_file, mode='a', header=write_header, index=False)
+                    print(f"    Saved {len(session_laps)} laps")
                     completed_sessions.add((year, circuit_name))
-                    
+                    total_loaded += 1
+
             except Exception as e:
-                print(f"Failed to load {year} - {circuit_name}: {e}")
-                # We do NOT save a placeholder here so we can retry on next run if it was a network failure.
-                
-    print(f"\nData collection run completed.")
+                print(f"    FAILED: {e}")
+                total_failed += 1
+
+    print(f"\n{'='*60}")
+    print(f"  DATA COLLECTION COMPLETE")
+    print(f"{'='*60}")
+    print(f"  Loaded:  {total_loaded} races")
+    print(f"  Skipped: {total_skipped} (already collected)")
+    print(f"  Failed:  {total_failed}")
+
+    # Print final summary
+    if os.path.exists(output_file):
+        df = pd.read_csv(output_file)
+        df_clean = df[df['driver'] != 'NONE']
+        print(f"\n  Total rows in CSV: {len(df)}")
+        print(f"  Valid lap rows:    {len(df_clean)}")
+        print(f"  Unique circuits:   {df_clean['circuit'].nunique()}")
+        print(f"  Unique races:      {len(df_clean.groupby(['year', 'circuit']))}")
+
 
 if __name__ == '__main__':
-    collect_data()
+    collect_all_data()
