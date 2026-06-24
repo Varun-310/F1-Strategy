@@ -89,12 +89,18 @@ def generate_briefing(circuit: str, race_date: str, grid_position: int, driver: 
     sc_risk = float(sc_probability(circuit, current_lap=1, total_laps=57))
 
     # 5. Generate LLM Pre-race Briefing text using a fake pre-race state
+    try:
+        race_year = int(race_date.split('-')[0])
+    except Exception:
+        race_year = 2026
+
     fake_state = RaceState(
         driver=driver,
         circuit=circuit,
         total_laps=57,
         circuit_lat=lat,
         circuit_lon=lon,
+        year=race_year,
         current_lap=0,  # Lap 0 designates pre-race status
         current_compound=starting_compound,
         tyre_age=0,

@@ -55,6 +55,7 @@ class RaceState:
     total_laps: int
     circuit_lat: float
     circuit_lon: float
+    year: int = 2026
 
     # -- Current state (updated each lap) --
     current_lap: int = 0
@@ -172,7 +173,22 @@ class RaceState:
         """
         compound_enc = COMPOUND_MAP.get(self.current_compound, 1)
         avg_stint = AVG_STINT_LENGTH.get(self.current_compound, 28)
-        tyre_age_norm = min(self.tyre_age / avg_stint, 1.5)
+
+        # Live Calibration:
+        # Compare actual pace loss against historical baseline.
+        # If pace is dropping off faster than the historical baseline of ~0.06s/lap,
+        # we scale the normalized tyre age to make the model perceive the tyre as older.
+        deg_factor = 1.0
+        if self.tyre_age >= 5 and len(self._lap_times) >= 5:
+            recent_times = self._lap_times[-5:]
+            slope = (sum(recent_times[-2:]) - sum(recent_times[:2])) / 3.0
+            expected_slope = 0.06
+            if slope > expected_slope:
+                deg_factor = min(slope / expected_slope, 2.0)
+
+        calibrated_tyre_age = int(round(self.tyre_age * deg_factor))
+        tyre_age_norm = min(calibrated_tyre_age / avg_stint, 1.5)
+
         laps_remaining = max(self.total_laps - self.current_lap, 0)
         pct_race = self.current_lap / self.total_laps if self.total_laps > 0 else 0.0
         relative_pos = self.current_position / 20.0
@@ -242,13 +258,13 @@ class RaceState:
             'relative_position': relative_pos,
             'laps_remaining': laps_remaining,
             'compound_encoded': compound_enc,
-            'tyre_life': self.tyre_age,
+            'tyre_life': calibrated_tyre_age,
             'lap_number': self.current_lap,
             'is_pit_lap': 0,  # at prediction time, current lap is not a pit lap yet
             'stint_number': self._stint_number,
             'pct_race_complete': pct_race,
             'fuel_corrected_delta': fuel_corrected_delta,
-            'tyre_life_squared': self.tyre_age ** 2,
+            'tyre_life_squared': calibrated_tyre_age ** 2,
             'deg_trend_3': deg_trend_3,
             'deg_trend_5': deg_trend_5,
             'lap_time_std_3': lap_time_std_3,
@@ -256,7 +272,7 @@ class RaceState:
             'laps_since_pit': self.laps_since_last_pit(),
             'is_sc_vsc': self._is_sc_vsc,
             'circuit_encoded': self._circuit_encoded,
-            'compound_x_tyrelife': compound_enc * self.tyre_age,
+            'compound_x_tyrelife': compound_enc * calibrated_tyre_age,
             'compound_x_lapsrem': compound_enc * laps_remaining,
             'position_change': position_change,
             'field_pit_fraction': self._field_pit_fraction,

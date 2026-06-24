@@ -71,6 +71,7 @@ def simulate_race(circuit: str, year: int, driver: str) -> list:
         total_laps=total_laps,
         circuit_lat=lat,
         circuit_lon=lon,
+        year=year,
         current_compound=starting_compound,
         tyre_age=0,
         current_position=int(driver_laps.iloc[0]['Position']) if pd.notna(driver_laps.iloc[0]['Position']) else 10

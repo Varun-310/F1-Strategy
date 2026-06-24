@@ -32,6 +32,9 @@ def explain_decision(state: RaceState, decision: dict, rain_risk: float) -> str:
             if decision.get('_rain_override'):
                 return (f"Box, box, {state.driver}. Heavy rain is coming in, and the risk has spiked to {rain_risk:.0f}%. "
                         f"We are pitting immediately for {target_compound} tyres. Watch the white line on exit.")
+            if decision.get('_stint_override'):
+                return (f"Box, box, {state.driver}. We have hit the regulation stint limit on the {state.current_compound} tyres. "
+                        f"Pitting now to fit a fresh set of {target_compound} tyres. Push hard on entry.")
             return (f"Box, box, {state.driver}. We are pitting this lap for a fresh set of {target_compound} tyres. "
                     f"Your current stint is at {tyre_age} laps and the degradation is catching up. Push hard on pit entry.")
         else:
@@ -64,6 +67,7 @@ AI Strategic Decision:
 - Next Tyre Compound: {target_compound}
 - Decision Confidence: {confidence * 100:.1f}%
 - Rain Override: {"Yes" if decision.get('_rain_override') else "No"}
+- Stint Limit Override: {"Yes" if decision.get('_stint_override') else "No"}
 
 Provide a concise, professional briefing to the driver in exactly 2-3 sentences. Speak directly to {state.driver} as their race engineer (e.g. "Box this lap, {state.driver}..."). Do not include any markdown format, quotation marks, or conversational filler outside the briefing. Focus on tyre wear, safety car opportunities, or rain risks if applicable.
 """
@@ -83,6 +87,8 @@ Provide a concise, professional briefing to the driver in exactly 2-3 sentences.
             if decision.get('_rain_override'):
                 return (f"Box, box, {state.driver}. Rain risk is at {rain_risk:.0f}%. We are pitting now for {target_compound}s. "
                         f"Watch the grip levels on pit entry.")
+            if decision.get('_stint_override'):
+                return (f"Box, box, {state.driver}. Stint limit reached. We are pitting now to fit {target_compound} tyres.")
             return (f"Box, box, {state.driver}. We are pitting this lap for {target_compound} tyres. "
                     f"Let's cover the cars behind and make this stop count.")
         else:

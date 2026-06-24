@@ -80,27 +80,27 @@ def test_live_feed():
 
 def test_simulator():
     print("\n=== TESTING HISTORICAL REPLAY SIMULATOR ===")
-    # Replay 2024 Canada Grand Prix for driver NOR (we will just run a few laps to verify it loads)
-    circuit = "Canada"
-    year = 2024
-    driver = "NOR"
     
-    print(f"Starting simulation of {year} {circuit} GP for {driver}...")
+    # 1. Replay 2024 Canada GP (Old Regulations - No overrides should trigger unless rain)
+    print("\n[Case 1] Simulating 2024 Canada GP for NOR (Old Regulations)...")
     try:
-        # To avoid running all 70 laps in the test, we will limit the printout or just let it run.
-        # But wait! Since simulate_race downloads the full session from FastF1, let's verify if cache is hit.
-        decisions = simulate_race(circuit, year, driver)
-        print(f"\nSimulation complete. Total decisions simulated: {len(decisions)}")
+        decisions_2024 = simulate_race("Canada", 2024, "NOR")
+        print(f"Simulation 2024 complete. Total decisions: {len(decisions_2024)}")
     except Exception as e:
-        print(f"Simulator run encountered an error: {e}")
+        print(f"2024 Simulator run encountered an error: {e}")
+
+    # 2. Replay 2026 Canadian GP (New Regulations - Overrides and calibrated weights active)
+    print("\n[Case 2] Simulating 2026 Canadian GP for NOR (New Regulations)...")
+    try:
+        decisions_2026 = simulate_race("Canada", 2026, "NOR")
+        print(f"Simulation 2026 complete. Total decisions: {len(decisions_2026)}")
+    except Exception as e:
+        print(f"2026 Simulator run encountered an error: {e}")
 
 def main():
     test_safety_car()
     test_pre_race_briefing()
     test_live_feed()
-    
-    # We run the simulator last since FastF1 download might take some seconds
-    # Let's run it to ensure the replay is fully verified.
     test_simulator()
 
 if __name__ == "__main__":

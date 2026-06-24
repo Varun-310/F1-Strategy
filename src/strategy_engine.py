@@ -81,8 +81,21 @@ class StrategyEngine:
         # 3. Determine base ML pit decision
         should_pit = (pit_probability >= 0.65) and (state.laps_since_last_pit() >= 5)
 
-        # 4. Predict the recommended compound
-        # If we decide to pit, evaluate compound model assuming is_pit_lap=1
+        # 4. Apply stint limit override (applied only to 2026 or newer regulation years)
+        stint_override = False
+        if state.year >= 2026:
+            STINT_LIMITS = {
+                'SOFT': 15,
+                'MEDIUM': 25,
+                'HARD': 35
+            }
+            limit = STINT_LIMITS.get(state.current_compound)
+            if limit is not None and state.tyre_age >= limit:
+                should_pit = True
+                stint_override = True
+
+        # 5. Predict the recommended compound
+        # Evaluate compound model assuming is_pit_lap=1 if we are pitting
         features_comp = features.copy()
         features_comp['is_pit_lap'] = 1 if should_pit else 0
         df_comp = pd.DataFrame([features_comp])[self.compound_features]
@@ -92,8 +105,7 @@ class StrategyEngine:
         recommended_compound = self.compound_labels[recommended_idx]
         compound_conf = float(compound_probs[recommended_idx])
 
-        # 5. Rule-based rain override
-        # Weather data is critical; if rain risk is high, force a pit for wets/inters
+        # 6. Apply rain override
         rain_override = False
         if rain_risk >= 30.0:
             if rain_risk >= 60.0:
@@ -108,11 +120,19 @@ class StrategyEngine:
                 compound_conf = 1.0
                 rain_override = True
 
-        # 6. Format recommendation output
+        # 7. Apply post-overrides adjustment
+        if stint_override and not rain_override:
+            # If we are pitting due to regulation stint limit, don't put SOFT back on
+            if recommended_compound == 'SOFT':
+                recommended_compound = 'MEDIUM'
+            pit_probability = max(pit_probability, 0.90)
+            compound_conf = max(compound_conf, 0.90)
+
+        # 8. Format recommendation output
         if should_pit:
             action = 'PIT'
             chosen_compound = recommended_compound
-            confidence = pit_probability
+            confidence = pit_probability if not stint_override else max(pit_probability, 0.90)
         else:
             action = 'STAY_OUT'
             chosen_compound = state.current_compound
@@ -128,6 +148,7 @@ class StrategyEngine:
             '_pit_prob': round(pit_probability, 4),
             '_compound_conf': round(compound_conf, 4),
             '_rain_override': rain_override,
+            '_stint_override': stint_override,
             '_tyre_age': state.tyre_age,
         }
 

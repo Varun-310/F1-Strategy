@@ -24,7 +24,7 @@ def collect_all_data():
         except Exception as e:
             print(f"Error reading existing CSV: {e}. Starting fresh.")
 
-    years = range(2019, 2025)
+    years = range(2019, 2027)
     total_loaded = 0
     total_skipped = 0
     total_failed = 0

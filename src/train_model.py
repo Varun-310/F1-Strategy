@@ -148,6 +148,9 @@ def train_pit_model(train_df, test_df):
     X_test  = test_df[PIT_FEATURES].copy().fillna(0)
     y_test  = test_df['pit_in_next_3_laps'].copy()
 
+    # Weight 2026 data 5x more heavily due to regulation changes
+    year_weights = train_df['year'].apply(lambda y: 5.0 if y == 2026 else 1.0).values
+
     neg = (y_train == 0).sum()
     pos = (y_train == 1).sum()
     spw = neg / pos
@@ -188,6 +191,7 @@ def train_pit_model(train_df, test_df):
         for fold_i, (tr_idx, vl_idx) in enumerate(gkf.split(X_train, y_train, groups)):
             X_tr, X_vl = X_train.iloc[tr_idx], X_train.iloc[vl_idx]
             y_tr, y_vl = y_train.iloc[tr_idx], y_train.iloc[vl_idx]
+            w_tr = year_weights[tr_idx]
 
             mdl = XGBClassifier(
                 n_estimators=2000, max_depth=cfg['max_depth'],
@@ -198,7 +202,7 @@ def train_pit_model(train_df, test_df):
                 reg_alpha=cfg['alpha'], reg_lambda=cfg['lam'],
                 early_stopping_rounds=50,
             )
-            mdl.fit(X_tr, y_tr, eval_set=[(X_vl, y_vl)], verbose=False)
+            mdl.fit(X_tr, y_tr, sample_weight=w_tr, eval_set=[(X_vl, y_vl)], verbose=False)
             fold_iters.append(mdl.best_iteration)
 
             probs = mdl.predict_proba(X_vl)[:, 1]
@@ -230,7 +234,7 @@ def train_pit_model(train_df, test_df):
         min_child_weight=best_config['min_cw'], gamma=best_config['gamma'],
         reg_alpha=best_config['alpha'], reg_lambda=best_config['lam'],
     )
-    final.fit(X_train, y_train, verbose=False)
+    final.fit(X_train, y_train, sample_weight=year_weights, verbose=False)
 
     # --- Evaluate --------------------------------------------------------
     y_prob = final.predict_proba(X_test)[:, 1]
@@ -342,8 +346,14 @@ def train_compound_model(train_df, test_df):
     class_counts_sw = y_train.value_counts()
     max_count_sw = class_counts_sw.max()
     class_weight_map = {c: np.sqrt(max_count_sw / cnt) for c, cnt in class_counts_sw.items()}
-    sample_weights = y_train.map(class_weight_map).values
-    print(f"  Sample weights (sqrt-inv-freq):")
+    base_weights = y_train.map(class_weight_map).values
+
+    # 2026 data weighted 5x more due to new regulations starting in 2026
+    train_years = train_clean['year'].values
+    year_weights = np.array([5.0 if y == 2026 else 1.0 for y in train_years])
+    combined_weights = base_weights * year_weights
+
+    print(f"  Base class weights (sqrt-inv-freq):")
     for cls, w in class_weight_map.items():
         print(f"    {COMPOUND_LABELS.get(cls, cls)}: {w:.3f}")
 
@@ -374,7 +384,7 @@ def train_compound_model(train_df, test_df):
         for tr_idx, vl_idx in skf.split(X_train, y_train):
             X_tr, X_vl = X_train.iloc[tr_idx], X_train.iloc[vl_idx]
             y_tr, y_vl = y_train.iloc[tr_idx], y_train.iloc[vl_idx]
-            sw_tr = sample_weights[tr_idx]
+            sw_tr = combined_weights[tr_idx]
 
             mdl = XGBClassifier(
                 n_estimators=1500, max_depth=cfg['max_depth'],
@@ -414,7 +424,7 @@ def train_compound_model(train_df, test_df):
         gamma=best_config['gamma'], reg_alpha=best_config['alpha'],
         reg_lambda=best_config['lam'],
     )
-    final.fit(X_train, y_train, sample_weight=sample_weights, verbose=False)
+    final.fit(X_train, y_train, sample_weight=combined_weights, verbose=False)
 
     y_pred = final.predict(X_test)
     acc  = accuracy_score(y_test, y_pred)
@@ -466,12 +476,15 @@ def main():
     print(f"Races:      {len(df.groupby(['year','circuit']))}")
     print(f"Years:      {sorted(df['year'].unique())}")
 
-    # Time-based split
-    train_df = df[df['year'] <= 2023].copy()
-    test_df  = df[df['year'] == 2024].copy()
+    # Time-based split adjusted for 2026 regulation testing
+    test_circuits = ['Monte Carlo', 'Monaco', 'Barcelona', 'Spanish GP']
+    train_mask = (df['year'] <= 2025) | ((df['year'] == 2026) & (~df['circuit'].isin(test_circuits)))
+    test_mask = (df['year'] == 2026) & (df['circuit'].isin(test_circuits))
+    train_df = df[train_mask].copy()
+    test_df  = df[test_mask].copy()
 
-    print(f"\nTrain (2019-2023): {len(train_df)} rows across {train_df.groupby(['year','circuit']).ngroups} races")
-    print(f"Test  (2024):      {len(test_df)} rows across {test_df.groupby(['year','circuit']).ngroups} races")
+    print(f"\nTrain (2019-2025 + 2026 R1-R5): {len(train_df)} rows across {train_df.groupby(['year','circuit']).ngroups} races")
+    print(f"Test  (2026 Monaco/Barcelona):  {len(test_df)} rows across {test_df.groupby(['year','circuit']).ngroups} races")
 
     pit_model = train_pit_model(train_df, test_df)
     compound_model = train_compound_model(train_df, test_df)
