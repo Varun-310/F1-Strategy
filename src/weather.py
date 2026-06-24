@@ -1,14 +1,37 @@
 import requests
 from datetime import datetime, timezone, timedelta
 
-# Lat/Lon coordinates for the circuits
-CIRCUITS = {
-    'Canada': {'lat': 45.5006, 'lon': -73.5225},
-    'Silverstone': {'lat': 52.0710, 'lon': -1.0160},
-    'Spa': {'lat': 50.4372, 'lon': 5.9714},
-    'Monza': {'lat': 45.6206, 'lon': 9.2894},
-    'Japan': {'lat': 34.8417, 'lon': 136.5389}
-}
+import json
+import os
+
+# Lat/Lon coordinates for the circuits - loaded dynamically from circuits.json
+CIRCUITS = {}
+json_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'circuits.json'))
+if os.path.exists(json_path):
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            circuits_list = json.load(f)
+            for c in circuits_list:
+                CIRCUITS[c['name']] = {
+                    'lat': c['lat'],
+                    'lon': c['lon'],
+                    'country': c['country'],
+                    'weather_risk': c['weather_risk'],
+                    'avg_pit_window_start': c['avg_pit_window_start'],
+                    'avg_pit_window_end': c['avg_pit_window_end']
+                }
+    except Exception as e:
+        print(f"Error loading circuits.json: {e}")
+
+# Fallback values if loading fails
+if not CIRCUITS:
+    CIRCUITS = {
+        'Canada': {'lat': 45.5006, 'lon': -73.5225, 'avg_pit_window_start': 20, 'avg_pit_window_end': 26},
+        'Silverstone': {'lat': 52.0710, 'lon': -1.0160, 'avg_pit_window_start': 18, 'avg_pit_window_end': 24},
+        'Spa': {'lat': 50.4372, 'lon': 5.9714, 'avg_pit_window_start': 14, 'avg_pit_window_end': 20},
+        'Monza': {'lat': 45.6206, 'lon': 9.2894, 'avg_pit_window_start': 19, 'avg_pit_window_end': 25},
+        'Japan': {'lat': 34.8417, 'lon': 136.5389, 'avg_pit_window_start': 15, 'avg_pit_window_end': 21}
+    }
 
 def get_forecast(lat, lon):
     """

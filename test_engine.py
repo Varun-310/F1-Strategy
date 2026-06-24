@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from src.race_state import RaceState
 from src.strategy_engine import StrategyEngine
-from src.llm_explainer import explain_decision
+from src.llm_explainer import explain_decision, refine_decision_with_llm
 
 def main():
     print("Initializing Integration Test...")
@@ -101,6 +101,23 @@ def main():
     print(explanation)
     print("--------------------------------------")
 
+    # 5b. Refine decision with LLM Co-Strategist
+    print("\nRefining decision with LLM Co-Strategist...")
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    llm_decision = refine_decision_with_llm(
+        state=state,
+        ml_decision=decision,
+        rain_risk=rain_risk,
+        api_key=api_key
+    )
+    print("\n--- LLM Co-Strategist Output ---")
+    print(f"Action:           {llm_decision['action']}")
+    print(f"Compound:         {llm_decision['compound']}")
+    print(f"Confidence:       {llm_decision['confidence']:.4%}")
+    print(f"LLM Override?:    {llm_decision['override_applied']}")
+    print(f"Radio Briefing:   {llm_decision['explanation']}")
+    print("--------------------------------------")
+
     # 6. Test Rain Override Scenario
     print("\n======================================")
     print("TESTING RAIN OVERRIDE SCENARIO")
@@ -136,6 +153,22 @@ def main():
     
     print("\n--- Explanation briefing to driver (Rainy) ---")
     print(explanation_rainy)
+    print("--------------------------------------")
+
+    # 6b. Refine decision with LLM Co-Strategist (Rainy)
+    print("\nRefining decision with LLM Co-Strategist (Rainy)...")
+    llm_decision_rainy = refine_decision_with_llm(
+        state=state,
+        ml_decision=decision_rainy,
+        rain_risk=rain_risk_rainy,
+        api_key=api_key
+    )
+    print("\n--- LLM Co-Strategist Output (Rainy) ---")
+    print(f"Action:           {llm_decision_rainy['action']}")
+    print(f"Compound:         {llm_decision_rainy['compound']}")
+    print(f"Confidence:       {llm_decision_rainy['confidence']:.4%}")
+    print(f"LLM Override?:    {llm_decision_rainy['override_applied']}")
+    print(f"Radio Briefing:   {llm_decision_rainy['explanation']}")
     print("--------------------------------------")
 
 if __name__ == "__main__":

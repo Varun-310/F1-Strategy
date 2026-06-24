@@ -7,3 +7,4 @@ xgboost
 scikit-learn
 streamlit
 shap
+google-genai

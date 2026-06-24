@@ -12,16 +12,17 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from src.race_state import RaceState
 from src.strategy_engine import StrategyEngine
-from src.llm_explainer import explain_decision
+from src.llm_explainer import explain_decision, refine_decision_with_llm
 from src.weather import CIRCUITS
 
-def simulate_race(circuit: str, year: int, driver: str) -> list:
+def simulate_race(circuit: str, year: int, driver: str, api_key: str = None) -> list:
     """Load a historical race from FastF1 and replay it lap-by-lap through the strategy engine.
 
     Args:
         circuit: Name of the circuit (e.g. 'Canada' or 'Montreal').
         year: Year of the Grand Prix (e.g. 2024).
         driver: Three-letter driver identifier (e.g. 'NOR').
+        api_key: Optional Gemini API key.
 
     Returns:
         List of recommendation dictionaries.
@@ -127,15 +128,24 @@ def simulate_race(circuit: str, year: int, driver: str) -> list:
         # Update current lap metrics in state
         state.update(lap_data, weather_data)
 
-        # Call engine and explainer
+        # Call engine and explainer/refinement
         decision = engine.recommend(state, rain_risk=20.0, sc_prob=0.1)
-        explanation = explain_decision(state, decision, rain_risk=20.0)
+        llm_decision = refine_decision_with_llm(state, decision, rain_risk=20.0, api_key=api_key)
+
+        # Merge refined decision parameters
+        decision['action'] = llm_decision['action']
+        decision['compound'] = llm_decision['compound']
+        decision['confidence'] = llm_decision['confidence']
+        explanation = llm_decision['explanation']
+        decision['explanation'] = explanation
+        decision['override_applied'] = llm_decision['override_applied']
 
         # Print the requested output format: lap number, action, compound, explanation
         print(f"Lap {decision['lap']} | Action: {decision['action']} | Compound: {decision['compound']} | Briefing: {explanation}")
 
         # Append to choices
-        decision['explanation'] = explanation
+        decision['position'] = position
+        decision['gap_to_leader'] = gap_to_leader
         decisions.append(decision)
 
         # Synchronize physical state if the actual driver pitted on this lap

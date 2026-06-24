@@ -14,7 +14,7 @@ from src.safety_car import sc_probability
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-def generate_briefing(circuit: str, race_date: str, grid_position: int, driver: str) -> dict:
+def generate_briefing(circuit: str, race_date: str, grid_position: int, driver: str, api_key: Optional[str] = None) -> dict:
     """Prepare a pre-race briefing report for a driver before lights out.
 
     Args:
@@ -22,6 +22,7 @@ def generate_briefing(circuit: str, race_date: str, grid_position: int, driver: 
         race_date: The date of the race in YYYY-MM-DD format.
         grid_position: Starting grid slot (1 to 20).
         driver: Three-letter driver abbreviation (e.g. 'NOR').
+        api_key: Optional Gemini API key.
 
     Returns:
         A dict with briefing details:
@@ -118,7 +119,7 @@ def generate_briefing(circuit: str, race_date: str, grid_position: int, driver: 
     }
 
     # Fetch explanation briefing
-    briefing_text = explain_decision(fake_state, fake_decision, rain_risk)
+    briefing_text = explain_decision(fake_state, fake_decision, rain_risk, api_key=api_key)
 
     # Intercept fallback message if LLM generated generic in-race fallback text
     if "Stay out" in briefing_text and fake_state.current_lap == 0:

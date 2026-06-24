@@ -1,0 +1,218 @@
+[
+  {
+    "name": "Bahrain",
+    "country": "Bahrain",
+    "lat": 26.0325,
+    "lon": 50.5106,
+    "weather_risk": "low",
+    "avg_pit_window_start": 16,
+    "avg_pit_window_end": 22
+  },
+  {
+    "name": "Saudi Arabia",
+    "country": "Saudi Arabia",
+    "lat": 21.6319,
+    "lon": 39.1044,
+    "weather_risk": "low",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "Australia",
+    "country": "Australia",
+    "lat": -37.8497,
+    "lon": 144.9683,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 17,
+    "avg_pit_window_end": 23
+  },
+  {
+    "name": "Japan",
+    "country": "Japan",
+    "lat": 34.8417,
+    "lon": 136.5389,
+    "weather_risk": "high",
+    "avg_pit_window_start": 15,
+    "avg_pit_window_end": 21
+  },
+  {
+    "name": "China",
+    "country": "China",
+    "lat": 31.3389,
+    "lon": 121.2203,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 16,
+    "avg_pit_window_end": 22
+  },
+  {
+    "name": "Miami",
+    "country": "USA",
+    "lat": 25.9581,
+    "lon": -80.2389,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "Imola",
+    "country": "Italy",
+    "lat": 44.3439,
+    "lon": 11.7167,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "Monaco",
+    "country": "Monaco",
+    "lat": 43.7347,
+    "lon": 7.4206,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 25,
+    "avg_pit_window_end": 32
+  },
+  {
+    "name": "Canada",
+    "country": "Canada",
+    "lat": 45.5006,
+    "lon": -73.5225,
+    "weather_risk": "high",
+    "avg_pit_window_start": 20,
+    "avg_pit_window_end": 26
+  },
+  {
+    "name": "Spain",
+    "country": "Spain",
+    "lat": 41.5700,
+    "lon": 2.2611,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 19,
+    "avg_pit_window_end": 25
+  },
+  {
+    "name": "Austria",
+    "country": "Austria",
+    "lat": 47.2197,
+    "lon": 14.7647,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "UK",
+    "country": "United Kingdom",
+    "lat": 52.0710,
+    "lon": -1.0160,
+    "weather_risk": "high",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "Hungary",
+    "country": "Hungary",
+    "lat": 47.5789,
+    "lon": 19.2486,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 16,
+    "avg_pit_window_end": 22
+  },
+  {
+    "name": "Belgium",
+    "country": "Belgium",
+    "lat": 50.4372,
+    "lon": 5.9714,
+    "weather_risk": "high",
+    "avg_pit_window_start": 14,
+    "avg_pit_window_end": 20
+  },
+  {
+    "name": "Netherlands",
+    "country": "Netherlands",
+    "lat": 52.3888,
+    "lon": 4.5409,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 17,
+    "avg_pit_window_end": 23
+  },
+  {
+    "name": "Italy",
+    "country": "Italy",
+    "lat": 45.6206,
+    "lon": 9.2894,
+    "weather_risk": "low",
+    "avg_pit_window_start": 19,
+    "avg_pit_window_end": 25
+  },
+  {
+    "name": "Azerbaijan",
+    "country": "Azerbaijan",
+    "lat": 40.3725,
+    "lon": 49.8533,
+    "weather_risk": "low",
+    "avg_pit_window_start": 17,
+    "avg_pit_window_end": 23
+  },
+  {
+    "name": "Singapore",
+    "country": "Singapore",
+    "lat": 1.2914,
+    "lon": 103.8644,
+    "weather_risk": "high",
+    "avg_pit_window_start": 22,
+    "avg_pit_window_end": 29
+  },
+  {
+    "name": "USA-COTA",
+    "country": "USA",
+    "lat": 30.1328,
+    "lon": -97.6411,
+    "weather_risk": "medium",
+    "avg_pit_window_start": 16,
+    "avg_pit_window_end": 22
+  },
+  {
+    "name": "Mexico",
+    "country": "Mexico",
+    "lat": 19.4042,
+    "lon": -99.0907,
+    "weather_risk": "low",
+    "avg_pit_window_start": 19,
+    "avg_pit_window_end": 25
+  },
+  {
+    "name": "Sao Paulo",
+    "country": "Brazil",
+    "lat": -23.7036,
+    "lon": -46.6997,
+    "weather_risk": "high",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "Las Vegas",
+    "country": "USA",
+    "lat": 36.1147,
+    "lon": -115.1728,
+    "weather_risk": "low",
+    "avg_pit_window_start": 18,
+    "avg_pit_window_end": 24
+  },
+  {
+    "name": "Qatar",
+    "country": "Qatar",
+    "lat": 25.4900,
+    "lon": 51.4542,
+    "weather_risk": "low",
+    "avg_pit_window_start": 15,
+    "avg_pit_window_end": 21
+  },
+  {
+    "name": "Abu Dhabi",
+    "country": "UAE",
+    "lat": 24.4672,
+    "lon": 54.6031,
+    "weather_risk": "low",
+    "avg_pit_window_start": 17,
+    "avg_pit_window_end": 23
+  }
+]
